@@ -1,0 +1,46 @@
+---
+# guacamole server installation
+
+- hosts: plex
+  gather_facts: true
+  connection: local
+
+  tasks:
+  
+- name: Update apt cache
+  apt: update_cache=yes cache_valid_time=3600
+  sudo: yes
+
+- name: Install required software for Guacamole Server
+  apt: name={{ item }} state=present
+  sudo: yes
+  with_items:
+    - libcairo2-dev
+    - libjpeg62-dev
+    - libpng12-dev
+    - libossp-uuid-dev
+    - libfreerdp-dev
+    - libpango1.0-dev
+    - libssh2-1-dev
+    - libssh-dev
+    - tomcat7
+    - tomcat7-admin
+    - tomcat7-user
+
+- name: download guacamole file from sourceforge
+   get_url:
+    url: "http://sourceforge.net/projects/guacamole/files/current/source/guacamole-server-0.9.9.tar.gz"
+    dest: /tmp/
+
+# Unarchive the guacamole file
+- unarchive:
+    src: /tmp/guacamole-server-0.9.9.tar.gz
+    dest: /home/spoon/
+    remote_src: True
+
+- make:
+    chdir: /home/spoon/guacamole-server-0.9.9
+    target: install
+    become: yes
+
+---

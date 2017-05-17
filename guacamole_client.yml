@@ -1,0 +1,126 @@
+---
+# guacamole client installation
+
+- hosts: plex
+  gather_facts: true
+  connection: local
+
+/*
+After installing the guacamole server the following will help install 
+and setup guacd (the proxy daemon to integrate javascript with RDP or SSH)
+and guacamole.war (the client), the component that makes up the final HTML5
+application presented to you.
+URL: https://www.tecmint.com/guacamole-access-remote-linux-windows-machines-via-web-browser/
+*/
+
+  tasks:
+
+- name: download guacamole.war file from sourceforge
+   get_url:
+    url: "http://sourceforge.net/projects/guacamole/files/current/binary/guacamole-0.9.9.war"
+    dest: /var/lib/tomcat7
+
+- name: Move and rename to guacamole.war
+  mv:
+    src: /var/lib/tomcat7/guacamole-0.9.9.war
+    dest: /var/lib/tomcat7/guacamole.war
+
+- name: create the /etc/guacamole directory
+  file:
+    path: /etc/guacamole
+    state: directory
+    mode: 0755
+
+- name: create the //usr/share/tomcat7/.guacamole directory
+  file:
+    path: /usr/share/tomcat7/.guacamole
+    state: directory
+    mode: 0755
+
+- name: Copy sample config file
+  mv:
+  src: /home/spoon/guacamole.properties 
+  dest: /etc/guacamole/guacamole.properties
+  sudo: yes
+
+#-------- guacamole.properties ------------
+
+guacd-hostname: localhost
+guacd-port:    4822
+user-mapping:    /etc/guacamole/user-mapping.xml
+auth-provider:    net.sourceforge.guacamole.net.basic.BasicFileAuthenticationProvider
+basic-user-mapping:    /etc/guacamole/user-mapping.xml
+
+# ------------------------------------------
+
+- name: Create symbolic link for Tomcat
+  file:
+    src: /etc/guacamole/guacamole.properties
+    dest: /usr/share/tomcat7/.guacamole/
+    state: link
+
+
+# ------------ lastly, need to create user-mapping.xml ----------
+
+- name: Copy sample user-mapping.xml config file
+  mv:
+  src: /home/spoon/user-mapping.xml 
+  dest: /etc/guacamole/user-mapping.xml
+  sudo: yes
+
+# get the password with - # printf '%s' "spydergeek" | md5sum
+
+<user-mapping>
+<authorize 
+username="tecmint" 
+password="8383339b9c90775ac14693d8e620981f" 
+encoding="md5">
+<connection name="RHEL 7">
+<protocol>ssh</protocol>
+<param name="hostname">192.168.0.18</param>
+<param name="port">22</param>
+<param name="username">gacanepa</param>
+</connection>
+<connection name="Windows 10">
+<protocol>rdp</protocol>
+<param name="hostname">192.168.0.19</param>
+<param name="port">3389</param>
+</connection>
+</authorize>
+</user-mapping>
+
+# -----------------------------------------------------------------
+
+- name: Change file permissions appropriately for user-mapping.xml
+  file:
+    path: /etc/foo.conf
+    owner: tomcat7
+    group: tomcat7
+    mode: 0600
+
+- name: Start Tomcat and guacd
+  service:
+    name: tomcat7
+    state: started
+
+- name: Start guacd
+  service:
+    src: /usr/local/sbin/
+    name: guacd &
+
+
+# ---------------------------------------------------------------
+
+Launching the Guacamole Web Interface
+8. To access the Guacamole web interface, launch a browser and point it to http://server:8080/guacamole where server is the hostname or IP address of your server (in our case it is http://192.168.0.100:8080/guacamole) and login with the credentials given earlier (username: tecmint, password: tecmint01):
+
+# ---------------------------------------------------------------
+
+
+
+
+
+
+
+
+---
